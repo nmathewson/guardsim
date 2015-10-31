@@ -1,0 +1,31 @@
+
+Network scenarios (normal):
+   * Normal network; all hosts up with P=x%
+   * Network is down and looks down.
+   * Network seems up but is down.
+   * FascistFirewall; only 443 and 80 reachable. P=x%
+
+   * User moves among above networks over time.
+
+Guard behavior:
+   * Guard goes away and comes back a lot
+   * Guard stays up
+   * Guard starts up, goes down.
+   * Some change over time about which guards are Running/Guard/listed.
+
+User behavior:
+   * Regular
+   * Bridge
+   * FascistFirewall set.
+   * Restart tor (when not working? Repeatedly)
+   * HUP tor (when not working? repeatedly?)
+
+Network scenarios (hostile)
+   * Targeted guard takedown attack: attacker hits guards one after another.
+   * Network under broad attack: many guards are flaky
+
+   * Filtering at gateway; non-hostile fractino of Tor guards is unavailable.
+
+   * Filtering at guard: guard blocks connections when it does not control
+     path (out of scope?)
+   * 
