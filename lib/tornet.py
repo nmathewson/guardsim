@@ -10,8 +10,8 @@
 
 import random
 
-class Node:
-    def __init__(self, name, port, evil=False, reliability=0.999):
+class Node(object):
+    def __init__(self, name, port, evil=False, reliability=0.96):
         """Create a new Tor node."""
 
         # name for this node.
@@ -25,7 +25,7 @@ class Node:
         self._evil = evil
 
         # How much of the time is this node running?
-        self._reliabilitiy = 0.999
+        self._reliability = 0.999
 
         # True if this node is running
         self._up = True
@@ -88,7 +88,7 @@ def _randport(pfascistfriendly):
     else:
         return random.randint(1,65535)
 
-class Network:
+class Network(object):
 
     """Base class to represent a simulated Tor network.  Very little is
        actually simulated here: all we need is for guard nodes to come
@@ -98,7 +98,7 @@ class Network:
        node to be a guard.  This shouldn't affect the algorithm.
     """
     def __init__(self, num_nodes, pfascistfriendly=.3, pevil=0.5,
-                 avgnew=2.5, avgdel=2):
+                 avgnew=1.5, avgdel=0.5):
 
         """Create a new network with 'num_nodes' randomly generated nodes.
            Each node should be fascist-friendly with probability
@@ -151,10 +151,6 @@ class Network:
                         evil=random.random() < self._pevil)
             self._total += 1
 
-        # update which nodes are running.
-        for node in self._wholenet:
-            node.updateRunning()
-
     def updateRunning(self):
         """Enough time has passed for some nodes to go down and some to come
            up."""
@@ -167,7 +163,7 @@ class Network:
         return node.isReallyUp()
 
 
-class _NetworkDecorator:
+class _NetworkDecorator(object):
     """Decorator class for Network: wraps a network and implements all its
        methods by calling down to the base network.  We use these to
        simulate a client's local network connection."""
@@ -185,7 +181,7 @@ class _NetworkDecorator:
         return self._network.probe_node_is_up(node)
 
     def updateRunning(self):
-        self.updateRunning()
+        self._network.updateRunning()
 
 class FascistNetwork(_NetworkDecorator):
     """Network that blocks all connections except those to ports 80, 443"""
@@ -196,7 +192,7 @@ class FascistNetwork(_NetworkDecorator):
 class EvilFilteringNetwork(_NetworkDecorator):
     """Network that blocks connections to non-evil nodes with P=pBlockGood"""
     def __init__(self, network, pBlockGood=1.0):
-        super().__init__(network)
+        super(EvilFilteringNetwork, self).__init__(network)
         self._pblock = pBlockGood
 
     def probe_node_is_up(self, node):
@@ -205,12 +201,11 @@ class EvilFilteringNetwork(_NetworkDecorator):
                 return False
         return self._network.probe_node_is_up(node)
 
-class EvilKillingNetwork(_NetworkDecorator):
-
+class SniperNetwork(_NetworkDecorator):
     """Network that does a DoS attack on a client's non-evil nodes with
        P=pKillGood after each connection."""
     def __init__(self, network, pKillGood=1.0):
-        super().__init__(network)
+        super(SniperNetwork, self).__init__(network)
         self._pkill = pKillGood
 
     def probe_node_is_up(self, node):
@@ -225,7 +220,7 @@ class FlakyNetwork(_NetworkDecorator):
     """A network where all connections succ3eed only with probability
        'reliability', regardless of whether the node is up or down."""
     def __init__(self, network, reliability=0.9):
-        super().__init__(network)
+        super(FlakyNetwork, self).__init__(network)
         self._reliability = reliability
 
     def probe_node_is_up(self, node):

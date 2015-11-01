@@ -44,10 +44,9 @@ class ClientParams:
        as given in proposals 259 and 241
     """
     def __init__(self,
-                 PRIMARY_GUARDS=3,
                  UTOPIC_GUARDS_THRESHOLD=3,
                  DYSTOPIC_GUARDS_THRESHOLD=3,
-                 TOO_MANY_GUARDS=6,
+                 TOO_MANY_GUARDS=100, # XXX too high
                  TOO_RECENTLY=86400,
                  RETRY_DELAY=30,
                  RETRY_MULT=2):
@@ -128,6 +127,9 @@ class Guard:
     def markForRetry(self):
         """Mark this guard as untried, so that we will be willing to try it
            again."""
+        # XXXX We never call this unless _all_ the guards in group seem
+        # XXXX down.  But maybe we should give early guards in a list
+        # XXXX a chance again after a while?
         self._tried = False
 
     def addedWithin(self, nSec):
@@ -159,9 +161,12 @@ class Client:
         self._retryTimer = ExponentialTimer(parameters.RETRY_DELAY,
                                             parameters.RETRY_MULT)
 
+        # XXXX document
+        self._maybeDystopic = False
+
         self.updateGuardLists()
 
-    def nodeSeemsDystopic(node):
+    def nodeSeemsDystopic(self,node):
         """Return true iff this node seems like one we could use in a
            dystopic world."""
         return node.getPort() in [80, 443]
@@ -190,7 +195,7 @@ class Client:
                 self._UTOPIC_GUARDS.append(node)
 
         # Now mark every Guard we have as listed or unlisted.
-        for lst in (self.PRIMARY_DYS, self.PRIMARY_U):
+        for lst in (self._PRIMARY_DYS, self._PRIMARY_U):
             for g in lst:
                 if g.getNode().getID() in liveIDs:
                     g.markListed()
@@ -252,9 +257,14 @@ class Client:
                 return True
         return False
 
-    def getGuard(self):
+    def getGuard(self, dystopic):
         """We're about to build a circuit: return a guard to try."""
-        dystopic = self.inADystopia()
+
+        # This is the underlying list that we modify, AND the list
+        # we look at.
+        # XXXX are these supposed to be different lists?  Are we
+        # XXXX also supposed to consider non-dystopian guards
+        # XXXX when we think we're not in a dystopia?
         lst = self.getPrimaryList(dystopic)
 
         usable = [ g for g in lst if g.canTry() ]
@@ -265,7 +275,8 @@ class Client:
 
         if len(usable) == 0 and len(listed) >= self.getNPrimary(dystopic):
             # We can't add any more and we don't have any to try.
-            # XXXX should this be two separate timers?
+
+            # XXXX should this be two separate timers, one for each list?
             if self._retryTimer.isReady():
                 self._retryTimer.fire()
                 for g in lst:
@@ -278,11 +289,14 @@ class Client:
 
         if len(usable):
             # Just use the first one that isn't down.
+            assert usable[0] != None
             return usable[0]
 
         # We can add another one.
         full = self.getFullList(dystopic)
         possible = [ n for n in full if not self.nodeIsInGuardList(n, lst) ]
+        if len(possible) == 0:
+            return None
         newnode = random.choice(possible)
         self.addGuard(newnode, dystopic)
         newguard = lst[-1]
@@ -301,7 +315,15 @@ class Client:
         """Try to build a circuit; return true if we succeeded."""
         if self.netLooksDown():
             return False
-        g = self.getGuard()
-        if not g:
+        g = self.getGuard(self._maybeDystopic)
+        if g == None and not self._maybeDystopic:
+            # Perhaps we are in a dystopia and we don't know it?
+            self._maybeDystopic = True
+            # XXXX we never notice if we have left a dystopia.
+            g = self.getGuard(True)
+        if g == None:
             return False
         return self.connectToGuard(g)
+
+
+
