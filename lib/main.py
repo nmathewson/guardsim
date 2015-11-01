@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from __future__ import print_function
+
 from py3hax import *
 import tornet
 import simtime
@@ -43,8 +45,9 @@ def trivialSimulation():
         # new consensus
         c.updateGuardLists()
 
-    print(ok, (ok+bad))
-    print(ok / float(ok+bad))
+    print("Successful client circuits (total): %d (%d)" % (ok, (ok + bad)))
+    print("Percentage of successful circuilts: %f%%"
+          % ((ok / float(ok + bad)) * 100.0))
 
 if __name__ == '__main__':
     trivialSimulation()
