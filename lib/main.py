@@ -1,3 +1,4 @@
+#!/usr/bin/python
 
 from py3hax import *
 import tornet
