@@ -10,7 +10,7 @@ import simtime
 class GivingUp(Exception):
     pass
 
-class ExponentialTimer:
+class ExponentialTimer(object):
     """ Implements an exponential timer using simulated time. """
     def __init__(self, initial, multiplier):
         """Create a timer that's ready to fire immediately.  After
@@ -39,7 +39,7 @@ class ExponentialTimer:
         self._cur_delay *= self._multiplier
 
 
-class ClientParams:
+class ClientParams(object):
     """
        Represents the configuration parameters of the client algorithm,
        as given in proposals 259 and 241
@@ -68,7 +68,7 @@ class ClientParams:
         # wait this much longer (factor) after the first time.
         self.RETRY_MULT = RETRY_MULT
 
-class Guard:
+class Guard(object):
     """
        Represents what a client knows about a guard.
     """
@@ -138,7 +138,7 @@ class Guard:
            simulated seconds."""
         return self._addedAt + nSec >= simtime.now()
 
-class Client:
+class Client(object):
     """
        A stateful client implementation of the guard selection algorithm.
     """
