@@ -4,6 +4,7 @@
 
 import random
 
+from py3hax import *
 import simtime
 
 class GivingUp(Exception):

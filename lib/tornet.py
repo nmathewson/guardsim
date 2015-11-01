@@ -9,6 +9,7 @@
 """
 
 import random
+from py3hax import *
 
 class Node(object):
     def __init__(self, name, port, evil=False, reliability=0.96):
@@ -123,7 +124,7 @@ class Network(object):
         self._lamdbaDel = 1.0 / avgdel
 
         # total number of nodes ever added on the network.
-        self._total = n
+        self._total = num_nodes
 
     def new_consensus(self):
         """Return a list of the running guard nodes."""

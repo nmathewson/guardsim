@@ -1,13 +1,15 @@
 
+from py3hax import *
 import tornet
 import simtime
 import client
+
 
 def trivialSimulation():
     net = tornet.Network(100)
 
     # Decorate the network.
-    # One or two of these at a time, kthx!
+    # Uncomment one or two of these at a time, kthx!
     #net = tornet.FascistNetwork(net)
     #net = tornet.FlakyNetwork(net)
     #net = tornet.EvilFilteringNetwork(net)
@@ -40,8 +42,8 @@ def trivialSimulation():
         # new consensus
         c.updateGuardLists()
 
-    print ok, (ok+bad)
-    print ok / float(ok+bad)
+    print(ok, (ok+bad))
+    print(ok / float(ok+bad))
 
 if __name__ == '__main__':
     trivialSimulation()
