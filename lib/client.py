@@ -325,6 +325,3 @@ class Client(object):
         if g == None:
             return False
         return self.connectToGuard(g)
-
-
-
