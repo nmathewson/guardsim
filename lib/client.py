@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# This is distributed under cc0. See the LICENCE file distributed along with
+# this code.
 
 import random
 
@@ -236,10 +239,10 @@ class Client:
         lst.append(Guard(node))
 
     def inADystopia(self):
-        return False # XXXXX
+        return False # Dystopia detection not implemented XXXXX
 
     def netLooksDown(self):
-        return False # XXXXX
+        return False # Downness detection not implemented XXXXX
 
     def nodeIsInGuardList(self, n, gl):
         """Return true iff there is a Guard in 'gl' corresponding to the Node
