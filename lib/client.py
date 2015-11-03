@@ -77,6 +77,13 @@ class ClientParams(object):
             self.UTOPIC_GUARDS_THRESHOLD = 0.05
             # prop259: percentage of guards to keep in a guard list (dystopic)
             self.DYSTOPIC_GUARDS_THRESHOLD = 0.05
+            # [prop259] Percentage of UTOPIC_GUARDS we try before also trying
+            # the DYSTOPIC_GUARDS.
+            self.UTOPIC_GUARDLIST_FAILOVER_THRESHOLD = 0.75
+            # [prop259] Percentage of DYSTOPIC_GUARDS we try before concluding
+            # that the network is down.
+            self.UTOPIC_GUARDLIST_FAILOVER_THRESHOLD = 1.00
+
 
 
 class Guard(object):
@@ -268,6 +275,33 @@ class Client(object):
             a dystopic network, and ``False`` otherwise.
         """
         self._maybeDystopic = bool(dystopic)
+
+    def checkFailoverThreshold(self):
+        """From prop259:
+
+        5.a. When the GUARDLIST_FAILOVER_THRESHOLD of the UTOPIC_GUARDLIST has
+             been tried (without success), Alice should begin trying steps 1-4
+             with entry guards from the DYSTOPIC_GUARDLIST as well.  Further,
+             if no nodes from UTOPIC_GUARDLIST work, and it appears that the
+             DYSTOPIC_GUARDLIST nodes are accessible, Alice should make a note
+             to herself that she is possibly behind a fascist firewall.
+        """
+        if self.conformsToProp259:
+            nTried = len(self.getPrimaryList(self.inADystopia))
+            print("Guards in statefile: %d" % nTried)
+
+            if nTried >= self.guardsThreshold:
+                print("We've hit the %stopic failover rate! %s" %
+                      "u" if not self.inADystopia else "dys")
+                if not self.inADystopia:
+                    print("Trying dystopic guards!")
+                    self.maybeInADystopia = True
+                elif self.inADystopia:
+                    print("Marking the network as down!")
+                    self.networkAppearsDown = True
+
+                return False
+        return True
 
     def updateGuardLists(self):
         """Called at start and when a new consensus should be made & received:
