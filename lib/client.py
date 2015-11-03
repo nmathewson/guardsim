@@ -164,10 +164,66 @@ class Client(object):
         self._retryTimer = ExponentialTimer(parameters.RETRY_DELAY,
                                             parameters.RETRY_MULT)
 
-        # XXXX document
+        # Internal state for whether we think we're on a dystopic network
+        self._dystopic = False
         self._maybeDystopic = False
 
         self.updateGuardLists()
+
+    @property
+    def conformsToProp241(self):
+        return bool(self._p.PROP241)
+
+    @property
+    def conformsToProp259(self):
+        return bool(self._p.PROP259)
+
+    @property
+    def inADystopia(self):
+        """Returns ``True`` if we think we're on a dystopic network."""
+        return self._dystopic
+
+    @inADystopia.setter
+    def inADystopia(self, dystopic):
+        """Record whether or not we think we're on a dystopic network.
+
+        :param bool dystopic: Should be ``True`` if we think we're on
+            a dystopic network, and ``False`` otherwise.
+        """
+        self._dystopic = bool(dystopic)
+
+    @property
+    def inAUtopia(self):
+        """Returns ``True`` if we think we're on a *non-dystopic* network."""
+        return not self._dystopic
+
+    @inAUtopia.setter
+    def inAUtopia(self, utopic):
+        """Record whether or not we think we're on a *non-dystopic* network.
+
+        :param bool utopic: Should be ``True`` if we think we're on
+            a *non-dystopic* network, and ``False`` otherwise.
+        """
+        self._dystopic = not bool(utopic)
+
+    @property
+    def maybeInADystopia(self):
+        """Returns ``True`` if we think we're *maybe* on a dystopic network.
+
+        XXXX At what point or probability does our opinion shift from
+             "maybe" to "definitely"?  Should "maybe" be stored not as
+             a boolean, but instead as our estimated likelihood?
+        """
+        return self._maybeDystopic
+
+    @maybeInADystopia.setter
+    def maybeInADystopia(self, dystopic):
+        """Record whether or not we think we're *maybe* on a dystopic network.
+
+        :param bool dystopic: Should be ``True`` if we think we're *maybe* on
+            a dystopic network, and ``False`` otherwise.
+        """
+        self._maybeDystopic = bool(dystopic)
 
     def nodeSeemsDystopic(self,node):
         """Return true iff this node seems like one we could use in a
@@ -204,7 +260,6 @@ class Client(object):
                     g.markListed()
                 else:
                     g.markUnlisted()
-
 
     def getPrimaryList(self, dystopic):
         """Get the list of primary Guards for a given dystopia setting """
@@ -249,9 +304,6 @@ class Client(object):
 
         # now actually add the guard.
         lst.append(Guard(node))
-
-    def inADystopia(self):
-        return False # Dystopia detection not implemented XXXXX
 
     def netLooksDown(self):
         return False # Downness detection not implemented XXXXX
