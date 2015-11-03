@@ -184,6 +184,7 @@ class Client(object):
         # Internal state for whether we think we're on a dystopic network
         self._dystopic = False
         self._maybeDystopic = False
+        self._networkAppearsDown = False
 
         self.updateGuardLists()
 
@@ -275,6 +276,19 @@ class Client(object):
             a dystopic network, and ``False`` otherwise.
         """
         self._maybeDystopic = bool(dystopic)
+
+    @property
+    def networkAppearsDown(self):
+        """``True`` if we think the network is down. ``False`` otherwise."""
+        return self._networkAppearsDown
+
+    @networkAppearsDown.setter
+    def networkAppearsDown(self, isDown):
+        """Set whether or not we think the `system is down`__.
+
+        .. _: http://www.homestarrunner.com/systemisdown.html
+        """
+        self._networkAppearsDown = bool(isDown)
 
     def checkFailoverThreshold(self):
         """From prop259:
@@ -374,9 +388,6 @@ class Client(object):
         # now actually add the guard.
         lst.append(Guard(node))
 
-    def netLooksDown(self):
-        return False # Downness detection not implemented XXXXX
-
     def nodeIsInGuardList(self, n, gl):
         """Return true iff there is a Guard in 'gl' corresponding to the Node
            'n'."""
@@ -441,7 +452,7 @@ class Client(object):
 
     def buildCircuit(self):
         """Try to build a circuit; return true if we succeeded."""
-        if self.netLooksDown():
+        if self.networkAppearsDown:
             return False
         g = self.getGuard(self._maybeDystopic)
         if g == None and not self._maybeDystopic:
