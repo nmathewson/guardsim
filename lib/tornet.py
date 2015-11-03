@@ -218,7 +218,7 @@ class SniperNetwork(_NetworkDecorator):
         return result
 
 class FlakyNetwork(_NetworkDecorator):
-    """A network where all connections succ3eed only with probability
+    """A network where all connections succeed only with probability
        'reliability', regardless of whether the node is up or down."""
     def __init__(self, network, reliability=0.9):
         super(FlakyNetwork, self).__init__(network)
