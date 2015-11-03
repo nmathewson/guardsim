@@ -55,7 +55,9 @@ class ClientParams(object):
                  TOO_MANY_GUARDS=100, # XXX too high
                  TOO_RECENTLY=86400,
                  RETRY_DELAY=30,
-                 RETRY_MULT=2):
+                 RETRY_MULT=2,
+                 PROP241=False,
+                 PROP259=False):
 
         # prop241: if we have seen this many guards...
         self.TOO_MANY_GUARDS = TOO_MANY_GUARDS

@@ -6,19 +6,27 @@ from py3hax import *
 import tornet
 import simtime
 import client
+import options
 
 
-def trivialSimulation():
-    net = tornet.Network(100)
+def trivialSimulation(args):
+    num = 100 if not args.total_relays else args.total_relays
+    print("Number of nodes in simulated Tor network: %d" % num)
+
+    net = tornet.Network(num)
 
     # Decorate the network.
-    # Uncomment one or two of these at a time, kthx!
-    #net = tornet.FascistNetwork(net)
-    #net = tornet.FlakyNetwork(net)
-    #net = tornet.EvilFilteringNetwork(net)
-    #net = tornet.SniperNetwork(net)
+    if args.fascist_firewall:
+        net = tornet.FascistNetwork(net)
+    if args.flaky_network:
+        net = tornet.FlakyNetwork(net)
+    if args.evil_filtering:
+        net = tornet.EvilFilteringNetwork(net)
+    if args.sniper_network:
+        net = tornet.SniperNetwork(net)
 
-    c = client.Client(net, client.ClientParams())
+    params = client.ClientParams(PROP241=args.prop241, PROP259=args.prop259)
+    c = client.Client(net, params)
 
     ok = 0
     bad = 0
@@ -50,4 +58,5 @@ def trivialSimulation():
           % ((ok / float(ok + bad)) * 100.0))
 
 if __name__ == '__main__':
-    trivialSimulation()
+    args = options.makeOptionsParser()
+    trivialSimulation(args)
