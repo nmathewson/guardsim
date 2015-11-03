@@ -320,7 +320,10 @@ class Client(object):
             return self._UTOPIC_GUARDS
 
     def getNPrimary(self, dystopic):
-        """Return the number of listed primary guards that we'll allow."""
+        """Return the number of listed primary guards that we'll allow.
+
+        XXXX Primary Guards is a different thing to the *_GUARDS_THRESHOLDs!
+        """
         return self.guardsThreshold
 
     def addGuard(self, node, dystopic=False):
