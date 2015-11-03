@@ -149,6 +149,7 @@ class Guard(object):
            simulated seconds."""
         return self._addedAt + nSec >= simtime.now()
 
+
 class Client(object):
     """
        A stateful client implementation of the guard selection algorithm.
@@ -268,11 +269,6 @@ class Client(object):
         """
         self._maybeDystopic = bool(dystopic)
 
-    def nodeSeemsDystopic(self,node):
-        """Return true iff this node seems like one we could use in a
-           dystopic world."""
-        return node.getPort() in [80, 443]
-
     def updateGuardLists(self):
         """Called at start and when a new consensus should be made & received:
            updates *TOPIC_GUARDS."""
@@ -288,7 +284,7 @@ class Client(object):
         # We get the latest consensus here.
         for node in self._net.new_consensus():
             liveIDs.add(node.getID())
-            if self.nodeSeemsDystopic(node):
+            if node.seemsDystopic():
                 self._DYSTOPIC_GUARDS.append(node)
             else:
                 # XXXX Having this be 'else' means that FirewallPorts

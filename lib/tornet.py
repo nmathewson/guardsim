@@ -80,6 +80,12 @@ class Node(object):
            mustn't call this."""
         return self._evil
 
+    def seemsDystopic(self):
+        """Return true iff this node seems like one we could use in a
+           dystopic world."""
+        return self.getPort() in [80, 443]
+
+
 def _randport(pfascistfriendly):
     """generate and return a random port.  If 'pfascistfriendly' is true,
        return a port in the FascistPortList.  Otherwise return any random
@@ -88,6 +94,7 @@ def _randport(pfascistfriendly):
         return random.choice([80, 443])
     else:
         return random.randint(1,65535)
+
 
 class Network(object):
 
