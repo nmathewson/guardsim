@@ -46,11 +46,6 @@ class ClientParams(object):
        Represents the configuration parameters of the client algorithm,
        as given in proposals 259 and 241
     """
-    # percentage of guards to keep in a guard list (utopic)
-    UTOPIC_GUARDS_THRESHOLD = 0.05
-    # percentage of guards to keep in a guard list (dystopic)
-    DYSTOPIC_GUARDS_THRESHOLD = 0.05
-
     def __init__(self,
                  TOO_MANY_GUARDS=100, # XXX too high
                  TOO_RECENTLY=86400,
@@ -68,6 +63,20 @@ class ClientParams(object):
         self.RETRY_DELAY = RETRY_DELAY
         # wait this much longer (factor) after the first time.
         self.RETRY_MULT = RETRY_MULT
+
+        # which proposal to follow when they diverge
+        self.PROP241 = PROP241
+        self.PROP259 = PROP259
+
+        # use absolute numbers, rather than percentages, when following prop241
+        if self.PROP241:
+            self.UTOPIC_GUARDS_THRESHOLD = 3
+            self.DYSTOPIC_GUARDS_THRESHOLD = 3
+        elif self.PROP259:
+            # prop259: percentage of guards to keep in a guard list (utopic)
+            self.UTOPIC_GUARDS_THRESHOLD = 0.05
+            # prop259: percentage of guards to keep in a guard list (dystopic)
+            self.DYSTOPIC_GUARDS_THRESHOLD = 0.05
 
 
 class Guard(object):
@@ -179,6 +188,40 @@ class Client(object):
         return bool(self._p.PROP259)
 
     @property
+    def guardsThreshold(self):
+        """Determine our ``{U,DYS}TOPIC_GUARDS_THRESHOLD``.
+
+        If this client :meth:`~Client.conformsToProp241`, then
+        ``{U,DYS}TOPIC_GUARDS_THRESHOLD`` is interpreted as an integer
+        specifying the maximum number of entry guards which will be attempted.
+        Otherwise, when the client :meth:`~Client.conformsToProp259`, then
+        ``{U,DYS}TOPIC_GUARDS_THRESHOLD`` is interpreted as an float
+        representing the percentage of the total running entry guards from the
+        most recent consensus to which the client will attempt to connect, and
+        these two numbers are multiplied and then floored to arrive at the
+        maximum number of attempted entry guards.
+
+        :rtype: int
+        :returns: The maximum number of guards in either the
+            ``UTOPIC_GUARDLIST`` or the ``DYSTOPIC_GUARDLIST`` to which this
+            :class:`Client` will consider connecting.
+        """
+        running_guards = len(self._net.new_consensus())
+
+        if self.conformsToProp259:
+            if self.inADystopia:
+                r = floor(running_guards * self._p.DYSTOPIC_GUARDS_THRESHOLD)
+            else:
+                r = floor(running_guards * self._p.UTOPIC_GUARDS_THRESHOLD)
+        elif self.conformsToProp241:
+            if self.inADystopia:
+                r = self._p.DYSTOPIC_GUARDS_THRESHOLD
+            else:
+                r = self._p.DYSTOPIC_GUARDS_THRESHOLD
+
+        return r
+
+    @property
     def inADystopia(self):
         """Returns ``True`` if we think we're on a dystopic network."""
         return self._dystopic
@@ -278,14 +321,7 @@ class Client(object):
 
     def getNPrimary(self, dystopic):
         """Return the number of listed primary guards that we'll allow."""
-        total_running_guards = len(self._net.new_consensus())
-
-        if dystopic:
-            r = floor(total_running_guards * self._p.DYSTOPIC_GUARDS_THRESHOLD)
-        else:
-            r = floor(total_running_guards * self._p.UTOPIC_GUARDS_THRESHOLD)
-
-        return r
+        return self.guardsThreshold
 
     def addGuard(self, node, dystopic=False):
         """Try to add a single Node 'node' to the 'dystopic' guard list."""
