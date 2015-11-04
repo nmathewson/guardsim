@@ -301,7 +301,7 @@ class Client(object):
              to herself that she is possibly behind a fascist firewall.
         """
         if self.conformsToProp259:
-            nTried = len(self.getPrimaryList(self.inADystopia))
+            nTried = len(self.getPrimaryGuards(self.inADystopia))
             print("Guards in statefile: %d" % nTried)
 
             if nTried >= self.guardsThreshold:
@@ -348,12 +348,19 @@ class Client(object):
                 else:
                     g.markUnlisted()
 
-    def getPrimaryList(self, dystopic):
-        """Get the list of primary Guards for a given dystopia setting """
+    def getPrimaryUtopicGuards(self):
+        """Get the list of primary utopic guards."""
+        return self._PRIMARY_U
+
+    def getPrimaryDystopicGuards(self):
+        """Get the list of primary dystopic guards."""
+        return self._PRIMARY_DYS
+
+    def getPrimaryGuards(self, dystopic):
+        """Get the list of primary guards for a given dystopia setting."""
         if dystopic:
-            return self._PRIMARY_DYS
-        else:
-            return self._PRIMARY_U
+            return self.getPrimaryDystopicGuards()
+        return self.getPrimaryUtopicGuards()
 
     def getFullList(self, dystopic):
         """Get the list of possible Nodes from the consensus for a given
@@ -372,7 +379,7 @@ class Client(object):
 
     def addGuard(self, node, dystopic=False):
         """Try to add a single Node 'node' to the 'dystopic' guard list."""
-        lst = self.getPrimaryList(dystopic)
+        lst = self.getPrimaryGuards(dystopic)
 
         # prop241: if we have added too many guards too recently, die!
         # XXXX Is this what prop241 actually says?
@@ -404,7 +411,7 @@ class Client(object):
         # XXXX are these supposed to be different lists?  Are we
         # XXXX also supposed to consider non-dystopian guards
         # XXXX when we think we're not in a dystopia?
-        lst = self.getPrimaryList(dystopic)
+        lst = self.getPrimaryGuards(dystopic)
 
         usable = [ g for g in lst if g.canTry() ]
         listed = [ g for g in lst if g.isListed() ]
