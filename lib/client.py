@@ -89,6 +89,13 @@ class ClientParams(object):
             # that the network is down.
             self.UTOPIC_GUARDLIST_FAILOVER_THRESHOLD = 1.00
 
+        # From asn's post and prop259.  This should be a consensus parameter.
+        # It stores the number of guards in {U,DYS}TOPIC_GUARDLIST which we
+        # (strongly) prefer connecting to above all others.  The ones which we
+        # prefer connecting to are those at the top of the
+        # {U,DYS}TOPIC_GUARDLIST when said guardlist is ordered in terms of the
+        # nodes' measured bandwidth as listed in the most recent consensus.
+        self.N_PRIMARY_GUARDS = 3
 
 
 class Guard(object):
