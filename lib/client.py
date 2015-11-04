@@ -469,8 +469,8 @@ class Client(object):
             # We can't add any more and we don't have any to try.
 
             # XXXX should this be two separate timers, one for each list?
-            if self._retryTimer.isReady():
-                self._retryTimer.fire()
+            if self._networkDownRetryTimer.isReady():
+                self._networkDownRetryTimer.fire()
                 for g in lst:
                     g.markForRetry()
 
