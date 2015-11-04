@@ -9,16 +9,20 @@ from math import floor
 from py3hax import *
 import simtime
 
+
 class GivingUp(Exception):
     pass
 
+
 class ExponentialTimer(object):
-    """ Implements an exponential timer using simulated time. """
+    """Implements an exponential timer using simulated time."""
+
     def __init__(self, initial, multiplier):
-        """Create a timer that's ready to fire immediately.  After
-           it first fires, it won't be ready again until 'initial'
-           seconds have passed.  Each time after that, it will
-           increase the delay by a factor of 'multiplier'.
+        """Create a timer that's ready to fire immediately.
+
+        After it first fires, it won't be ready again until **initial** seconds
+        have passed.  Each time after that, it will increase the delay by a
+        factor of **multiplier**.
         """
         self._initial_delay = initial
         self._multiplier = multiplier
@@ -42,9 +46,8 @@ class ExponentialTimer(object):
 
 
 class ClientParams(object):
-    """
-       Represents the configuration parameters of the client algorithm,
-       as given in proposals 259 and 241
+    """Represents the configuration parameters of the client algorithm, as given
+    in proposals 259 and 241.
     """
     def __init__(self,
                  TOO_MANY_GUARDS=100, # XXX too high
@@ -87,9 +90,8 @@ class ClientParams(object):
 
 
 class Guard(object):
-    """
-       Represents what a client knows about a guard.
-    """
+    """Represents what a client knows about a guard."""
+
     def __init__(self, node):
         # tornet.Node instance
         self._node = node
@@ -115,7 +117,8 @@ class Guard(object):
 
     def mark(self, up):
         """Mark this guard as up or down because of a successful/unsuccessful
-           connection attempt."""
+        connection attempt.
+        """
         self._tried = True
         if up:
             self._markedDown = False
@@ -125,13 +128,15 @@ class Guard(object):
             self._markedUp = False
 
     def markUnlisted(self):
-        """Mark this guard as unlisted because it didn't appear in the
-           most recent consensus."""
+        """Mark this guard as unlisted because it didn't appear in the most
+        recent consensus.
+        """
         self._listed = False
 
     def markListed(self):
-        """Mark this guard as listed because it did appear in the
-           most recent consensus."""
+        """Mark this guard as listed because it did appear in the most recent
+        consensus.
+        """
         self._listed = True
 
     def canTry(self):
@@ -140,27 +145,29 @@ class Guard(object):
 
     def isListed(self):
         """Return true iff the guard is listed in the most recent consensus
-           we've seen."""
+        we've seen.
+        """
         return self._listed
 
     def markForRetry(self):
-        """Mark this guard as untried, so that we will be willing to try it
-           again."""
+        """Mark this guard as untried, so that we'll be willing to try it
+        again.
+        """
         # XXXX We never call this unless _all_ the guards in group seem
         # XXXX down.  But maybe we should give early guards in a list
         # XXXX a chance again after a while?
         self._tried = False
 
     def addedWithin(self, nSec):
-        """Return true iff this guard was added within the last 'nSec'
-           simulated seconds."""
+        """Return ``True`` iff this guard was added within the last **nSec**
+        simulated seconds.
+        """
         return self._addedAt + nSec >= simtime.now()
 
 
 class Client(object):
-    """
-       A stateful client implementation of the guard selection algorithm.
-    """
+    """A stateful client implementation of the guard selection algorithm."""
+
     def __init__(self, network, parameters):
 
         # a torsim.Network object.
