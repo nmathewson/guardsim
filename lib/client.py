@@ -6,6 +6,7 @@
 
 import random
 
+from functools import partial
 from math import floor
 
 from py3hax import *
@@ -19,7 +20,7 @@ class GivingUp(Exception):
 class ExponentialTimer(object):
     """Implements an exponential timer using simulated time."""
 
-    def __init__(self, initial, multiplier):
+    def __init__(self, initial, multiplier, action, *args, **kwargs):
         """Create a timer that's ready to fire immediately.
 
         After it first fires, it won't be ready again until **initial** seconds
@@ -28,6 +29,12 @@ class ExponentialTimer(object):
         """
         self._initial_delay = initial
         self._multiplier = multiplier
+
+        # This is a callable which should be called when the timer fires.  It
+        # should return a bool, and if that is ``False``, then we should
+        # reschedule (with exponential delay, of course).  Otherwise, do
+        # nothing (because we assume that the scheduled action was successful).
+        self.fireAction = partial(action, *args, **kwargs)
 
         self.reset()
 
@@ -45,6 +52,8 @@ class ExponentialTimer(object):
         assert self.isReady()
         self._next = simtime.now() + self._cur_delay
         self._cur_delay *= self._multiplier
+
+        self.fireAction()
 
 
 class ClientParams(object):
@@ -194,8 +203,9 @@ class Client(object):
         self._PRIMARY_DYS = []
         self._PRIMARY_U = []
 
-        self._retryTimer = ExponentialTimer(parameters.RETRY_DELAY,
-                                            parameters.RETRY_MULT)
+        self._networkDownRetryTimer = ExponentialTimer(parameters.RETRY_DELAY,
+                                                       parameters.RETRY_MULT,
+                                                       self.retryNetwork)
 
         # Internal state for whether we think we're on a dystopic network
         self._dystopic = False
@@ -304,6 +314,11 @@ class Client(object):
 
         .. _: http://www.homestarrunner.com/systemisdown.html
         """
+        # If we're flipping the state from the network being up to it being
+        # down, then reschedule a retry timer:
+        if not self._networkAppearsDown and bool(isDown):
+            self._networkDownRetryTimer.reset()
+
         self._networkAppearsDown = bool(isDown)
 
     def checkFailoverThreshold(self):
@@ -419,8 +434,23 @@ class Client(object):
                 return True
         return False
 
+    def retryNetwork(self, *args, **kwargs):
+        """Assuming the network was down, retry from step #0."""
+        print("The network was down. Retrying...")
+        self.networkAppearsDown = False
+        # XXXX no detection for if we've left the dystopia
+        self.getGuard(self.inADystopia)
+
     def getGuard(self, dystopic):
         """We're about to build a circuit: return a guard to try."""
+
+        if self.conformsToProp259:
+            # 0. Determine if the local network is potentially accessible.
+            if self.networkAppearsDown:
+                # XXXX [prop259] It isn't very well defined what we should do if
+                # the network seems to be down…
+                print("The network is (still) down...")
+                return None
 
         # This is the underlying list that we modify, AND the list
         # we look at.
