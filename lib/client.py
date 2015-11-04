@@ -301,6 +301,7 @@ class Client(object):
         :param bool dystopic: Should be ``True`` if we think we're *maybe* on
             a dystopic network, and ``False`` otherwise.
         """
+        print("We might be in a dystopia...")
         self._maybeDystopic = bool(dystopic)
 
     @property
