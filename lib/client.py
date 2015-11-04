@@ -334,7 +334,6 @@ class Client(object):
         """
         if self.conformsToProp259:
             nTried = len(self.getPrimaryGuards(self.inADystopia))
-            print("Guards in statefile: %d" % nTried)
 
             if nTried >= self.guardsThreshold:
                 print("We've hit the %stopic failover rate! %s" %
