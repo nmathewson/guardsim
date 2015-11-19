@@ -129,7 +129,8 @@ class Guard(object):
         # True iff the node is listed as a guard in the most recent consensus
         self._listed = True
 
-    def getNode(self):
+    @property
+    def node(self):
         """Return the underlying torsim.Node object for this guard."""
         return self._node
 
@@ -374,7 +375,7 @@ class Client(object):
         # Now mark every Guard we have as listed or unlisted.
         for lst in (self._PRIMARY_DYS, self._PRIMARY_U):
             for g in lst:
-                if g.getNode().getID() in liveIDs:
+                if g.node.getID() in self._ALL_GUARDS:
                     g.markListed()
                 else:
                     g.markUnlisted()
@@ -430,7 +431,7 @@ class Client(object):
         """Return true iff there is a Guard in 'gl' corresponding to the Node
            'n'."""
         for g in gl:
-            if g.getNode() == n:
+            if g.node == n:
                 return True
         return False
 
@@ -492,14 +493,14 @@ class Client(object):
         newnode = random.choice(possible)
         self.addGuard(newnode, dystopic)
         newguard = lst[-1]
-        assert newguard.getNode() == newnode
+        assert newguard.node == newnode
 
         return newguard
 
     def connectToGuard(self, guard):
         """Try to connect to 'guard' -- if it's up on the network, mark it up.
            Return true on success, false on failure."""
-        up = self._net.probe_node_is_up(guard.getNode())
+        up = self._net.probe_node_is_up(guard.node)
         guard.mark(up)
         return up
 
