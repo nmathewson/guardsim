@@ -9,7 +9,11 @@
 """
 
 import random
+
+from math import floor
+
 from py3hax import *
+
 
 class Node(object):
     def __init__(self, name, port, evil=False, reliability=0.96):
@@ -36,6 +40,20 @@ class Node(object):
 
         # random hex string.
         self._id = "".join(random.choice("0123456789ABCDEF") for _ in xrange(40))
+
+        # Some completely made up number for the bandwidth of this guard.
+        self._bandwidth = 0
+
+    @property
+    def bandwidth(self, alpha=1.0, beta=0.5, bandwidth_max=100000):
+        """Completely make-believe bandwith.  It's calculated as a random point
+        on the probability density function of a gamma distribution over
+        (0,100000] in KB/s.
+        """
+        if not self._bandwidth:
+            self._bandwidth = \
+                int(floor(random.gammavariate(alpha, beta)) * bandwith_max)
+        return self._bandwith
 
     def getName(self):
         """Return the human-readable name for this node."""
