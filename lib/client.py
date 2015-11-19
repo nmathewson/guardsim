@@ -17,6 +17,16 @@ class GivingUp(Exception):
     pass
 
 
+def sortByBandwidth(guard, other):
+    """Comparison function for sorting guards by bandwidth."""
+    if guard.node.bandwidth < other.node.bandwidth:
+        return -1
+    elif guard.node.bandwidth == other.node.bandwidth:
+        return 0
+    elif guard.node.bandwidth > other.node.bandwidth:
+        return 1
+
+
 class ExponentialTimer(object):
     """Implements an exponential timer using simulated time."""
 
