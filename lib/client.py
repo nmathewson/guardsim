@@ -391,11 +391,11 @@ class Client(object):
                     g.markUnlisted()
 
     def getPrimaryUtopicGuards(self):
-        """Get the list of primary utopic guards."""
+        """Get the list of utopic guards which we should prioritise trying."""
         return self._PRIMARY_U
 
     def getPrimaryDystopicGuards(self):
-        """Get the list of primary dystopic guards."""
+        """Get the list of dystopic guards which we should prioritise trying."""
         return self._PRIMARY_DYS
 
     def getPrimaryGuards(self, dystopic):
