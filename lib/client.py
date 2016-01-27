@@ -517,7 +517,7 @@ class Client(object):
                 # XXXX [prop259] It isn't very well defined what we should do if
                 # the network seems to be down…
                 print("The network is (still) down...")
-                return None
+                return
 
         # 2. [prop259]: If the PRIMARY_GUARDS on our list are marked offline,
         # the algorithm attempts to retry them, to ensure that they were not
@@ -528,49 +528,69 @@ class Client(object):
         # Client.retryPrimaryGuards() is called every twenty minutes on a
         # timer. )
 
-        # This is the underlying list that we modify, AND the list
-        # we look at.
-        # XXXX are these supposed to be different lists?  Are we
-        # XXXX also supposed to consider non-dystopian guards
-        # XXXX when we think we're not in a dystopia?
-        lst = self.getPrimaryGuards(dystopic)
-
-        usable = [ g for g in lst if g.canTry() ]
-        listed = [ g for g in lst if g.isListed() ]
-
-        # See if we should retry or add more or use what we have.
-        # Here we consider the number of currently-guardy guards.
-
-        if len(usable) == 0 and len(listed) >= self.getNPrimary(dystopic):
-            # We can't add any more and we don't have any to try.
-
-            # XXXX should this be two separate timers, one for each list?
-            if self._networkDownRetryTimer.isReady():
-                self._networkDownRetryTimer.fire()
-                for g in lst:
-                    g.markForRetry()
+        # 3. Take the list of all available and fitting entry guards and return
+        # the top one in the list.
+        if self.conformsToProp241:
+            lst = []
+            lst.extend(self.getPrimaryUtopicGuards())
+            lst.extend(self.getPrimaryDystopicGuards())
 
             usable = [ g for g in lst if g.canTry() ]
+            listed = [ g for g in lst if g.isListed() ]
 
-            if not len(usable):
+            # See if we should retry or add more or use what we have.
+            # Here we consider the number of currently-guardy guards.
+
+            # We can't add any more and we don't have any to try.
+            if not usable and len(listed) >= self.NUM_PRIMARY_GUARDS:
                 return None
 
-        if len(usable):
-            # Just use the first one that isn't down.
-            assert usable[0] != None
-            return usable[0]
+            if usable:
+                return usable[0] # Just use the first one that isn't down.
 
-        # We can add another one.
-        full = self.getFullList(dystopic)
-        possible = [ n for n in full if not self.nodeIsInGuardList(n, lst) ]
-        if len(possible) == 0:
-            return None
-        newnode = random.choice(possible)
-        self.addGuard(newnode, dystopic)
-        newguard = lst[-1]
-        assert newguard.node == newnode
+            # This is the underlying list that we modify, AND the list
+            # we look at.
+            # XXXX are these supposed to be different lists?  Are we
+            # XXXX also supposed to consider non-dystopian guards
+            # XXXX when we think we're not in a dystopia?
+            lst = self.getPrimaryGuards()
 
-        return newguard
+            # We can add another one.
+            full = self.getFullList()
+            possible = [ n for n in full if not self.nodeIsInGuardList(n, lst) ]
+            if len(possible) == 0:
+                return None
+            newnode = random.choice(possible)
+            if self.addGuard(newnode, dystopic) is not None:
+                newguard = lst[-1]
+                assert newguard.node == newnode
+                return newguard
+            else:
+                return None
+
+        # 3. Take the list of all available and fitting entry guards and return
+        # the top one in the list.
+        if self.conformsToProp259:
+            #XXXX Need an easy way to say that the UTOPIC_GUARDS includes
+            # routers advertised on 80/443.
+            guards = filter(lambda g: g.canTry(), self.getPrimaryGuards())
+
+            # XXXX [prop259] ADD_TO_SPEC
+            # 3.5. If we should retry our primary guards, then do so.
+            if not guards:
+                if self._primaryGuardsRetryTimer.isReady():
+                    self._primaryGuardsRetryTimer.fire()
+
+            guards = filter(lambda g: g.canTry(), self.getPrimaryGuards())
+
+            # 4. If there were no available entry guards, the algorithm adds a new entry
+            # guard and returns it.  [XXX detail what "adding" means]
+            if not guards:
+                self.addNewGuard()
+
+            for guard in guards:
+                if self.connectToGuard(guard):
+                    return guard
 
     def connectToGuard(self, guard):
         """Try to connect to 'guard' -- if it's up on the network, mark it up.
