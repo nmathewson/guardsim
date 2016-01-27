@@ -214,6 +214,10 @@ class Client(object):
         # utopic sets.  each guard is represented here as a torsim.Node.
         self._DYSTOPIC_GUARDS = self._UTOPIC_GUARDS = None
 
+        # The Node.getID() results for every relay with the Guard flag from
+        # the most recent consensus.
+        self._ALL_GUARD_NODE_IDS = set()
+
         # The number of listed primary guards that we prioritise connecting to.
         self.NUM_PRIMARY_GUARDS = 3  # chosen by dice roll, guaranteed to be random
 
@@ -378,12 +382,9 @@ class Client(object):
         # XXXX I'm not sure what happens if a node changes its ORPort
         # XXXX or when the client changes its policies.
 
-        # Temporary set of node IDs for the listed nodes.
-        liveIDs = set()
-
         # We get the latest consensus here.
         for node in self._net.new_consensus():
-            liveIDs.add(node.getID())
+            self._ALL_GUARD_NODE_IDS.add(node.getID())
             if node.seemsDystopic():
                 self._DYSTOPIC_GUARDS.append(node)
             else:
@@ -395,7 +396,7 @@ class Client(object):
         # Now mark every Guard we have as listed or unlisted.
         for lst in (self._PRIMARY_DYS, self._PRIMARY_U):
             for g in lst:
-                if g.node.getID() in self._ALL_GUARDS:
+                if g.node.getID() in self._ALL_GUARD_NODE_IDS:
                     g.markListed()
                 else:
                     g.markUnlisted()
