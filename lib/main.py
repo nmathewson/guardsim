@@ -10,7 +10,7 @@ import options
 
 
 def trivialSimulation(args):
-    num = 100 if not args.total_relays else args.total_relays
+    num = 1000 if not args.total_relays else args.total_relays
     print("Number of nodes in simulated Tor network: %d" % num)
 
     net = tornet.Network(num)
