@@ -139,6 +139,9 @@ class Guard(object):
         # True iff the node is listed as a guard in the most recent consensus
         self._listed = True
 
+    def __str__(self):
+        return "%s" % self._node._id
+
     @property
     def node(self):
         """Return the underlying torsim.Node object for this guard."""
