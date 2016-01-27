@@ -15,6 +15,12 @@ from math import floor
 from py3hax import *
 
 
+def compareNodeBandwidth(this, other):
+    if this.bandwidth < other.bandwidth: return -1
+    elif this.bandwidth > other.bandwidth: return 1
+    else: return 0
+
+
 class Node(object):
     def __init__(self, name, port, evil=False, reliability=0.96):
         """Create a new Tor node."""
@@ -52,8 +58,8 @@ class Node(object):
         """
         if not self._bandwidth:
             self._bandwidth = \
-                int(floor(random.gammavariate(alpha, beta)) * bandwith_max)
-        return self._bandwith
+                int(floor(random.gammavariate(alpha, beta) * bandwidth_max))
+        return self._bandwidth
 
     def getName(self):
         """Return the human-readable name for this node."""

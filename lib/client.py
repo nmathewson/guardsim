@@ -12,17 +12,8 @@ from functools import partial
 from math import floor
 
 from py3hax import *
+from tornet import compareNodeBandwidth
 import simtime
-
-
-def sortByBandwidth(guard, other):
-    """Comparison function for sorting guards by bandwidth."""
-    if guard.node.bandwidth < other.node.bandwidth:
-        return -1
-    elif guard.node.bandwidth == other.node.bandwidth:
-        return 0
-    elif guard.node.bandwidth > other.node.bandwidth:
-        return 1
 
 
 class ExponentialTimer(object):
@@ -85,7 +76,8 @@ class ClientParams(object):
                  RETRY_DELAY=30,
                  RETRY_MULT=2,
                  PROP241=False,
-                 PROP259=False):
+                 PROP259=False,
+                 PRIORITIZE_BANDWIDTH=True):
 
         # prop241: if we have seen this many guards...
         self.TOO_MANY_GUARDS = TOO_MANY_GUARDS
@@ -124,6 +116,10 @@ class ClientParams(object):
         # {U,DYS}TOPIC_GUARDLIST when said guardlist is ordered in terms of the
         # nodes' measured bandwidth as listed in the most recent consensus.
         self.N_PRIMARY_GUARDS = 3
+
+        # If True, select higher bandwidth guards (rather than random ones) when
+        # choosing a new guard.
+        self.PRIORITIZE_BANDWIDTH = PRIORITIZE_BANDWIDTH
 
 
 class Guard(object):
@@ -253,6 +249,9 @@ class Client(object):
         self._networkAppearsDown = False
 
         self.updateGuardLists()
+
+        # Statistics keeping variables:
+        self._GUARD_BANDWIDTHS = []
 
     @property
     def conformsToProp241(self):
@@ -401,6 +400,10 @@ class Client(object):
                 # XXXX Interesting!  And maybe bad!
                 self._UTOPIC_GUARDS.append(node)
 
+        # Sort the lists from highest bandwidth to lowest.
+        self._UTOPIC_GUARDS.sort(cmp=compareNodeBandwidth, reverse=True)
+        self._DYSTOPIC_GUARDS.sort(cmp=compareNodeBandwidth, reverse=True)
+
         # Now mark every Guard we have as listed or unlisted.
         for lst in (self._PRIMARY_DYS, self._PRIMARY_U):
             for g in lst:
@@ -451,7 +454,11 @@ class Client(object):
         possible = self.getFullList()
         unused = [n for n in possible if not
                   self.nodeIsInGuardList(n, self.getPrimaryGuards())]
-        node = random.choice(unused)
+
+        if self._p.PRIORITIZE_BANDWIDTH:
+            node = unused[0]
+        else:
+            node = random.choice(unused)
         self.addGuard(node)
 
     def addGuard(self, node, dystopic=False):
@@ -609,6 +616,8 @@ class Client(object):
         # dystopia, then we must have left the dystopia.
         if not guard.node.seemsDystopic and up and self.inADystopia:
             self.inAUtopia = True
+        if up:
+            self._GUARD_BANDWIDTHS.append(guard._node.bandwidth)
 
         return up
 
@@ -625,3 +634,11 @@ class Client(object):
         if not g:
             return False
         return self.connectToGuard(g)
+
+    ###########################
+    # Statistics keeping code #
+    ###########################
+
+    def averageGuardBandwidth(self, *arg, **kwargs):
+        return (float(sum(self._GUARD_BANDWIDTHS)) /
+                float(len(self._GUARD_BANDWIDTHS)))

@@ -25,7 +25,10 @@ def trivialSimulation(args):
     if args.sniper_network:
         net = tornet.SniperNetwork(net)
 
-    params = client.ClientParams(PROP241=args.prop241, PROP259=args.prop259)
+    params = client.ClientParams(
+        PROP241=args.prop241,
+        PROP259=args.prop259,
+        PRIORITIZE_BANDWIDTH=not args.no_prioritize_bandwidth)
     c = client.Client(net, params)
 
     ok = 0
@@ -56,6 +59,7 @@ def trivialSimulation(args):
     print("Successful client circuits (total): %d (%d)" % (ok, (ok + bad)))
     print("Percentage of successful circuilts: %f%%"
           % ((ok / float(ok + bad)) * 100.0))
+    print("Average guard bandwidth capacity:   %d KB/s" % c.averageGuardBandwidth())
 
 if __name__ == '__main__':
     args = options.makeOptionsParser()

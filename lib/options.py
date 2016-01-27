@@ -50,4 +50,11 @@ def makeOptionsParser():
               "non-evil guard nodes with some probability after each "
               "connection."))
 
+    # Other miscellaneous options
+    parser.add_argument(
+        "-r", "--no-prioritize-bandwidth", action="store_true",
+        help=("When selecting a new guard node, the default is to prioritize "
+              "nodes with higher bandwidth capacity.  This option causes random "
+              "nodes to be chosen"))
+
     return parser.parse_args()
