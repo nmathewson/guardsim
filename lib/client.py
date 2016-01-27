@@ -597,6 +597,12 @@ class Client(object):
            Return true on success, false on failure."""
         up = self._net.probe_node_is_up(guard.node)
         guard.mark(up)
+
+        # If a utopic guard is up, and we previously thought we were in a
+        # dystopia, then we must have left the dystopia.
+        if not guard.node.seemsDystopic and up and self.inADystopia:
+            self.inAUtopia = True
+
         return up
 
     def buildCircuit(self):
