@@ -230,7 +230,6 @@ class Client(object):
 
         # Internal state for whether we think we're on a dystopic network
         self._dystopic = False
-        self._maybeDystopic = False
         self._networkAppearsDown = False
 
         self.updateGuardLists()
@@ -312,26 +311,6 @@ class Client(object):
             print("We're in a utopia...")
 
     @property
-    def maybeInADystopia(self):
-        """Returns ``True`` if we think we're *maybe* on a dystopic network.
-
-        XXXX At what point or probability does our opinion shift from
-             "maybe" to "definitely"?  Should "maybe" be stored not as
-             a boolean, but instead as our estimated likelihood?
-        """
-        return self._maybeDystopic
-
-    @maybeInADystopia.setter
-    def maybeInADystopia(self, dystopic):
-        """Record whether or not we think we're *maybe* on a dystopic network.
-
-        :param bool dystopic: Should be ``True`` if we think we're *maybe* on
-            a dystopic network, and ``False`` otherwise.
-        """
-        print("We might be in a dystopia...")
-        self._maybeDystopic = bool(dystopic)
-
-    @property
     def networkAppearsDown(self):
         """``True`` if we think the network is down. ``False`` otherwise."""
         return self._networkAppearsDown
@@ -373,7 +352,7 @@ class Client(object):
                       "u" if not self.inADystopia else "dys")
                 if not self.inADystopia:
                     print("Trying dystopic guards!")
-                    self.maybeInADystopia = True
+                    self.inAUtopia = False
                 elif self.inADystopia:
                     print("Marking the network as down!")
                     self.networkAppearsDown = True
@@ -565,12 +544,9 @@ class Client(object):
         if self.networkAppearsDown:
             print("Failing circuit because the network is down.")
             return False
-        g = self.getGuard(self._maybeDystopic)
-        if g == None and not self._maybeDystopic:
-            # Perhaps we are in a dystopia and we don't know it?
-            self._maybeDystopic = True
-            # XXXX we never notice if we have left a dystopia.
-            g = self.getGuard(True)
-        if g == None:
+
+        g = self.getGuard(self.inADystopia)
+
+        if not g:
             return False
         return self.connectToGuard(g)
