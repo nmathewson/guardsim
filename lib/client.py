@@ -217,9 +217,16 @@ class Client(object):
         self._PRIMARY_DYS = []
         self._PRIMARY_U = []
 
-        self._networkDownRetryTimer = ExponentialTimer(parameters.RETRY_DELAY,
-                                                       parameters.RETRY_MULT,
-                                                       self.retryNetwork)
+        self._dystopianNetworkDownRetryTimer = ExponentialTimer(
+            parameters.RETRY_DELAY,
+            parameters.RETRY_MULT,
+            self.retryNetwork,
+        )
+        self._utopianNetworkDownRetryTimer = ExponentialTimer(
+            parameters.RETRY_DELAY,
+            parameters.RETRY_MULT,
+            self.retryNetwork,
+        )
 
         # Internal state for whether we think we're on a dystopic network
         self._dystopic = False
@@ -273,6 +280,7 @@ class Client(object):
     @property
     def inADystopia(self):
         """Returns ``True`` if we think we're on a dystopic network."""
+        self.maybeCheckNetwork()
         return self._dystopic
 
     @inADystopia.setter
@@ -283,10 +291,13 @@ class Client(object):
             a dystopic network, and ``False`` otherwise.
         """
         self._dystopic = bool(dystopic)
+        if self._dystopic:
+            print("We're in a dystopia...")
 
     @property
     def inAUtopia(self):
         """Returns ``True`` if we think we're on a *non-dystopic* network."""
+        self.maybeCheckNetwork()
         return not self._dystopic
 
     @inAUtopia.setter
@@ -297,6 +308,8 @@ class Client(object):
             a *non-dystopic* network, and ``False`` otherwise.
         """
         self._dystopic = not bool(utopic)
+        if not self._dystopic:
+            print("We're in a utopia...")
 
     @property
     def maybeInADystopia(self):
@@ -329,10 +342,16 @@ class Client(object):
 
         .. _: http://www.homestarrunner.com/systemisdown.html
         """
+        if isDown:
+            print("The network went down...")
+        else:
+            print("The network came up...")
+
         # If we're flipping the state from the network being up to it being
         # down, then reschedule a retry timer:
         if not self._networkAppearsDown and bool(isDown):
-            self._networkDownRetryTimer.reset()
+            self._utopianNetworkDownRetryTimer.reset()
+            self._dystopianNetworkDownRetryTimer.reset()
 
         self._networkAppearsDown = bool(isDown)
 
@@ -455,16 +474,38 @@ class Client(object):
         # XXXX no detection for if we've left the dystopia
         self.getGuard(self.inADystopia)
 
+    def maybeCheckNetwork(self):
+        """In the actual implementation, this functionality should look (in some
+        cross-platform manner) to see if we have a network interface available
+        which has some plausibly-seeming configured route.
+        """
+        if self._dystopic:
+            if self._dystopianNetworkDownRetryTimer.isReady():
+                self._dystopianNetworkDownRetryTimer.fire()
+        else:
+            if self._utopianNetworkDownRetryTimer.isReady():
+                self._utopianNetworkDownRetryTimer.fire()
+
     def getGuard(self, dystopic):
         """We're about to build a circuit: return a guard to try."""
 
         if self.conformsToProp259:
             # 0. Determine if the local network is potentially accessible.
+            self.maybeCheckNetwork()
             if self.networkAppearsDown:
                 # XXXX [prop259] It isn't very well defined what we should do if
                 # the network seems to be down…
                 print("The network is (still) down...")
                 return None
+
+        # 2. [prop259]: If the PRIMARY_GUARDS on our list are marked offline,
+        # the algorithm attempts to retry them, to ensure that they were not
+        # flagged offline erroneously when the network was down.  This retry
+        # attempt happens only once every 20 mins to avoid infinite loops.
+        #
+        # (This step happens in automatically, because
+        # Client.retryPrimaryGuards() is called every twenty minutes on a
+        # timer. )
 
         # This is the underlying list that we modify, AND the list
         # we look at.
@@ -519,7 +560,10 @@ class Client(object):
 
     def buildCircuit(self):
         """Try to build a circuit; return true if we succeeded."""
+        self.maybeCheckNetwork()
+
         if self.networkAppearsDown:
+            print("Failing circuit because the network is down.")
             return False
         g = self.getGuard(self._maybeDystopic)
         if g == None and not self._maybeDystopic:
