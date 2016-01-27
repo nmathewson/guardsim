@@ -258,6 +258,8 @@ class Client(object):
 
         # Statistics keeping variables:
         self._GUARD_BANDWIDTHS = []
+        self._CIRCUIT_FAILURES_TOTAL = 0
+        self._CIRCUIT_FAILURES = 0
 
     @property
     def _state(self):
@@ -637,7 +639,7 @@ class Client(object):
         self.maybeCheckNetwork()
 
         if self.networkAppearsDown:
-            print("Failing circuit because the network is down.")
+            self._incrementCircuitFailureCount()
             return False
 
         g = self.getGuard(self.inADystopia)
@@ -649,6 +651,13 @@ class Client(object):
     ###########################
     # Statistics keeping code #
     ###########################
+
+    def _incrementCircuitFailureCount(self, *arg, **kwargs):
+        self._CIRCUIT_FAILURES += 1
+
+    def _resetCircuitFailureCount(self, *arg, **kwargs):
+        self._CIRCUIT_FAILURES_TOTAL += self._CIRCUIT_FAILURES
+        self._CIRCUIT_FAILURES = 0
 
     def averageGuardBandwidth(self, *arg, **kwargs):
         return (float(sum(self._GUARD_BANDWIDTHS)) /
