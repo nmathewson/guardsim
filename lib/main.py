@@ -57,7 +57,7 @@ def trivialSimulation(args):
         c.updateGuardLists()
 
     print("Successful client circuits (total): %d (%d)" % (ok, (ok + bad)))
-    print("Percentage of successful circuilts: %f%%"
+    print("Percentage of successful circuits:  %f%%"
           % ((ok / float(ok + bad)) * 100.0))
     print("Average guard bandwidth capacity:   %d KB/s" % c.averageGuardBandwidth())
 
