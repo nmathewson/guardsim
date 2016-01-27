@@ -212,6 +212,9 @@ class Client(object):
         # utopic sets.  each guard is represented here as a torsim.Node.
         self._DYSTOPIC_GUARDS = self._UTOPIC_GUARDS = None
 
+        # The number of listed primary guards that we prioritise connecting to.
+        self.NUM_PRIMARY_GUARDS = 3  # chosen by dice roll, guaranteed to be random
+
         # lists of Guard objects for the dystopic and utopic guards
         # configured on this client.
         self._PRIMARY_DYS = []
@@ -227,6 +230,10 @@ class Client(object):
             parameters.RETRY_MULT,
             self.retryNetwork,
         )
+        self._primaryGuardsRetryTimer = ExponentialTimer(
+            3600, # 60 minutes
+            0,    # linear?
+            self.retryPrimaryGuards)
 
         # Internal state for whether we think we're on a dystopic network
         self._dystopic = False
@@ -413,12 +420,6 @@ class Client(object):
         else:
             return self._UTOPIC_GUARDS
 
-    def getNPrimary(self, dystopic):
-        """Return the number of listed primary guards that we'll allow.
-
-        XXXX Primary Guards is a different thing to the *_GUARDS_THRESHOLDs!
-        """
-        return self.guardsThreshold
 
     def addGuard(self, node, dystopic=False):
         """Try to add a single Node 'node' to the 'dystopic' guard list."""
@@ -464,6 +465,26 @@ class Client(object):
         else:
             if self._utopianNetworkDownRetryTimer.isReady():
                 self._utopianNetworkDownRetryTimer.fire()
+
+    def retryPrimaryGuards(self):
+        """Retry our primary guards (from both PRIMARY_UTOPIC_GUARDS and
+        PRIMARY_DISTOPIC_GUARDS).
+
+        Cf. prop259 §2, step #2:
+            |
+            | 2. Then, if the PRIMARY_GUARDS on our list are marked offline,
+            | the algorithm attempts to retry them, to ensure that they were not
+            | flagged offline erroneously when the network was down.  This retry
+            | attempt happens only once every 20 mins to avoid infinite loops.
+            |
+        """
+        print("Retrying primary guards. We're currently in a %stopia." %
+              "u" if self.inAUtopia else "dys")
+
+        for guard in self.getPrimaryGuards():
+            if guard._markedDown:
+                print("Primary guard %s was marked down, marking for retry..." % guard)
+                guard.markForRetry()
 
     def getGuard(self, dystopic):
         """We're about to build a circuit: return a guard to try."""
