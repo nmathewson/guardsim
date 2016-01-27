@@ -4,6 +4,8 @@
 # This is distributed under cc0. See the LICENCE file distributed along with
 # this code.
 
+from __future__ import print_function
+
 import random
 
 from functools import partial
