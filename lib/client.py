@@ -274,7 +274,7 @@ class Client(object):
             ``UTOPIC_GUARDLIST`` or the ``DYSTOPIC_GUARDLIST`` to which this
             :class:`Client` will consider connecting.
         """
-        running_guards = len(self._net.new_consensus())
+        running_guards = len(self._DYSTOPIC_GUARDS) + len(self._UTOPIC_GUARDS)
 
         if self.conformsToProp259:
             if self.inADystopia:
