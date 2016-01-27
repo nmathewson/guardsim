@@ -158,9 +158,15 @@ class Guard(object):
         """
         self._tried = True
         if up:
+            if not self._markedUp:
+                print("Marked %s (%stopic) up" %
+                      (self, "dys" if self._node.seemsDystopic() else "u"))
             self._markedDown = False
             self._markedUp = True
         else:
+            if not self._markedDown:
+                print("Marked %s (%stopic) down" %
+                      (self, "dys" if self._node.seemsDystopic() else "u"))
             self._markedDown = True
             self._markedUp = False
 
