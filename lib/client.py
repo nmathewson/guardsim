@@ -41,6 +41,7 @@ class ExponentialTimer(object):
         """
         self._initial_delay = initial
         self._multiplier = multiplier
+        self._paused = False
 
         # This is a callable which should be called when the timer fires.  It
         # should return a bool, and if that is ``False``, then we should
@@ -50,6 +51,14 @@ class ExponentialTimer(object):
 
         self.reset()
 
+    def pause(self):
+        """Pause this timer."""
+        self._paused = True
+
+    def unpause(self):
+        """Resume this timer."""
+        self._paused = False
+
     def reset(self):
         """Reset the timer to the state when it was first created."""
         self._next = 0
@@ -57,6 +66,8 @@ class ExponentialTimer(object):
 
     def isReady(self):
         """Return true iff the timer is ready to fire now."""
+        if self._paused:
+            return False
         return self._next <= simtime.now()
 
     def fire(self):
