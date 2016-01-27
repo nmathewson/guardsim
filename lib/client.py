@@ -108,7 +108,7 @@ class ClientParams(object):
             self.UTOPIC_GUARDLIST_FAILOVER_THRESHOLD = 0.75
             # [prop259] Percentage of DYSTOPIC_GUARDS we try before concluding
             # that the network is down.
-            self.UTOPIC_GUARDLIST_FAILOVER_THRESHOLD = 1.00
+            self.DYSTOPIC_GUARDLIST_FAILOVER_THRESHOLD = 1.00
 
         # From asn's post and prop259.  This should be a consensus parameter.
         # It stores the number of guards in {U,DYS}TOPIC_GUARDLIST which we
