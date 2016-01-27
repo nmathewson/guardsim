@@ -260,6 +260,11 @@ class Client(object):
         self._GUARD_BANDWIDTHS = []
 
     @property
+    def _state(self):
+        """Returns a string describing whether we're dystopic or utopic."""
+        return "utopic" if self.inAUtopia else "dystopic"
+
+    @property
     def conformsToProp241(self):
         return bool(self._p.PROP241)
 
@@ -519,12 +524,12 @@ class Client(object):
             | attempt happens only once every 20 mins to avoid infinite loops.
             |
         """
-        print("Retrying primary guards. We're currently in a %stopia." %
-              "u" if self.inAUtopia else "dys")
+        print("Retrying primary guards. We're currently %s." % self._state)
 
         for guard in self.getPrimaryGuards():
             if guard._markedDown:
-                print("Primary guard %s was marked down, marking for retry..." % guard)
+                print("Primary %s guard %s was marked down, marking for retry…"
+                      % (self._state, guard))
                 guard.markForRetry()
 
     def getGuard(self, dystopic):
