@@ -358,12 +358,13 @@ class Client(object):
              to herself that she is possibly behind a fascist firewall.
         """
         if self.conformsToProp259:
-            nTried = len(self.getPrimaryGuards(self.inADystopia))
+            nTried = len(self.getPrimaryGuards())
 
             if nTried >= self.guardsThreshold:
-                print("We've hit the %stopic failover rate! %s" %
-                      "u" if not self.inADystopia else "dys")
-                if not self.inADystopia:
+                print("We've hit the %stopic failover rate! (%d)" %
+                      ("u" if self.inAUtopia else "dys",
+                       self.guardsThreshold))
+                if self.inAUtopia:
                     print("Trying dystopic guards!")
                     self.inAUtopia = False
                 elif self.inADystopia:
@@ -409,9 +410,9 @@ class Client(object):
         """Get the list of dystopic guards which we should prioritise trying."""
         return self._PRIMARY_DYS
 
-    def getPrimaryGuards(self, dystopic):
+    def getPrimaryGuards(self):
         """Get the list of primary guards for a given dystopia setting."""
-        if dystopic:
+        if self.inADystopia:
             return self.getPrimaryDystopicGuards()
         return self.getPrimaryUtopicGuards()
 
