@@ -424,24 +424,41 @@ class Client(object):
         else:
             return self._UTOPIC_GUARDS
 
+    def addNewGuard(self):
+        """Pick a Node and add it to our list of primary(?) Guards.
+
+        XXXX Should it be added to the primary list or is it not a primary
+        guard?  If we're picking a random guard, then that means the primary
+        ones probably weren't working… so is this a secondary one?
+        """
+        # 1. [prop241] and [prop259]: Check that we have not already attempted
+        # to add too many guards.  If we've added too many guards too recently,
+        # then boo-hoo-hoo no tor for you.
+        nTriedRecently = 0
+        for guard in self.getPrimaryGuards():
+            if guard.addedWithin(self._p.TOO_RECENTLY):
+                nTriedRecently += 1
+            if nTriedRecently >= self.guardsThreshold:
+                return
+
+        possible = self.getFullList()
+        unused = [n for n in possible if not
+                  self.nodeIsInGuardList(n, self.getPrimaryGuards())]
+        node = random.choice(unused)
+        self.addGuard(node)
 
     def addGuard(self, node, dystopic=False):
         """Try to add a single Node 'node' to the 'dystopic' guard list."""
-        lst = self.getPrimaryGuards(dystopic)
+        if self.conformsToProp259:
+            if not self.checkFailoverThreshold():
+                return None
 
-        # prop241: if we have added too many guards too recently, die!
-        # XXXX Is this what prop241 actually says?
+        guard = Guard(node)
+        print(("Picked new (%stopic) guard: %s" %
+               ("dys" if node.seemsDystopic() else "u", guard)))
 
-        nRecent = 1 # this guard will be recent.
-        for g in lst:
-            if g.addedWithin(self._p.TOO_RECENTLY):
-                nRecent += 1
-
-        if nRecent >= self._p.TOO_MANY_GUARDS:
-            raise GivingUp("Too many guards added too recently!")
-
-        # now actually add the guard.
-        lst.append(Guard(node))
+        lst = self.getPrimaryGuards()
+        lst.append(guard)
 
     def nodeIsInGuardList(self, n, gl):
         """Return true iff there is a Guard in 'gl' corresponding to the Node
