@@ -275,6 +275,24 @@ class Client(object):
         return bool(self._p.PROP259)
 
     @property
+    def guardsThresholdDystopic(self):
+        running = len(self._DYSTOPIC_GUARDS) + len(self._UTOPIC_GUARDS)
+
+        if self.conformsToProp259:
+            return floor(running * self._p.DYSTOPIC_GUARDS_THRESHOLD)
+        elif self.conformsToProp241:
+            return self._p.DYSTOPIC_GUARDS_THRESHOLD
+
+    @property
+    def guardsThresholdUtopic(self):
+        running = len(self._DYSTOPIC_GUARDS) + len(self._UTOPIC_GUARDS)
+
+        if self.conformsToProp259:
+            return floor(running * self._p.UTOPIC_GUARDS_THRESHOLD)
+        elif self.conformsToProp241:
+            return self._p.DYSTOPIC_GUARDS_THRESHOLD
+
+    @property
     def guardsThreshold(self):
         """Determine our ``{U,DYS}TOPIC_GUARDS_THRESHOLD``.
 
@@ -293,20 +311,12 @@ class Client(object):
             ``UTOPIC_GUARDLIST`` or the ``DYSTOPIC_GUARDLIST`` to which this
             :class:`Client` will consider connecting.
         """
-        running_guards = len(self._DYSTOPIC_GUARDS) + len(self._UTOPIC_GUARDS)
+        if self.inADystopia:
+            return self.guardsThresholdDystopic
+        else:
+            return self.guardsThresholdUtopic
 
-        if self.conformsToProp259:
-            if self.inADystopia:
-                r = floor(running_guards * self._p.DYSTOPIC_GUARDS_THRESHOLD)
-            else:
-                r = floor(running_guards * self._p.UTOPIC_GUARDS_THRESHOLD)
-        elif self.conformsToProp241:
-            if self.inADystopia:
-                r = self._p.DYSTOPIC_GUARDS_THRESHOLD
-            else:
-                r = self._p.DYSTOPIC_GUARDS_THRESHOLD
 
-        return r
 
     @property
     def inADystopia(self):
