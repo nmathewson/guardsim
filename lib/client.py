@@ -416,10 +416,10 @@ class Client(object):
             return self.getPrimaryDystopicGuards()
         return self.getPrimaryUtopicGuards()
 
-    def getFullList(self, dystopic):
+    def getFullList(self):
         """Get the list of possible Nodes from the consensus for a given
            dystopia setting"""
-        if dystopic:
+        if self.inADystopia:
             return self._DYSTOPIC_GUARDS
         else:
             return self._UTOPIC_GUARDS
