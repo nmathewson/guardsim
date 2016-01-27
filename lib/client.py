@@ -100,9 +100,9 @@ class ClientParams(object):
             self.DYSTOPIC_GUARDS_THRESHOLD = 3
         elif self.PROP259:
             # prop259: percentage of guards to keep in a guard list (utopic)
-            self.UTOPIC_GUARDS_THRESHOLD = 0.05
+            self.UTOPIC_GUARDS_THRESHOLD = 0.005
             # prop259: percentage of guards to keep in a guard list (dystopic)
-            self.DYSTOPIC_GUARDS_THRESHOLD = 0.05
+            self.DYSTOPIC_GUARDS_THRESHOLD = 0.005
             # [prop259] Percentage of UTOPIC_GUARDS we try before also trying
             # the DYSTOPIC_GUARDS.
             self.UTOPIC_GUARDLIST_FAILOVER_THRESHOLD = 0.75
