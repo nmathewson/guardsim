@@ -15,10 +15,6 @@ from py3hax import *
 import simtime
 
 
-class GivingUp(Exception):
-    pass
-
-
 def sortByBandwidth(guard, other):
     """Comparison function for sorting guards by bandwidth."""
     if guard.node.bandwidth < other.node.bandwidth:
