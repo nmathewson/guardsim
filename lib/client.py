@@ -235,16 +235,13 @@ class Client(object):
         self._PRIMARY_DYS = []
         self._PRIMARY_U = []
 
-        self._dystopianNetworkDownRetryTimer = ExponentialTimer(
+        self._networkDownRetryTimer = ExponentialTimer(
             parameters.RETRY_DELAY,
             parameters.RETRY_MULT,
             self.retryNetwork,
         )
-        self._utopianNetworkDownRetryTimer = ExponentialTimer(
-            parameters.RETRY_DELAY,
-            parameters.RETRY_MULT,
-            self.retryNetwork,
-        )
+        self._networkDownRetryTimer.pause()
+
         self._primaryGuardsRetryTimer = ExponentialTimer(
             3600, # 60 minutes
             0,    # linear?
@@ -384,16 +381,20 @@ class Client(object):
 
         .. _: http://www.homestarrunner.com/systemisdown.html
         """
-        if isDown:
-            print("The network went down...")
-        else:
-            print("The network came up...")
-
-        # If we're flipping the state from the network being up to it being
-        # down, then reschedule a retry timer:
+        # If we're flipping state from the network being up to down, then
+        # reschedule a retry timer and unpause it:
         if not self._networkAppearsDown and bool(isDown):
-            self._utopianNetworkDownRetryTimer.reset()
-            self._dystopianNetworkDownRetryTimer.reset()
+            print("The network went down...")
+            self._networkDownRetryTimer.reset()
+            self._networkDownRetryTimer.unpause()
+        # If we're flipping the state from down to up, then pause the retry
+        # timer:
+        elif self._networkAppearsDown and not bool(isDown):
+            print(("The network came up... %d circuits failed in the meantime "
+                   "(%d total due to network failures).") %
+                  (self._CIRCUIT_FAILURES, self._CIRCUIT_FAILURES_TOTAL))
+            self._resetCircuitFailureCount()
+            self._networkDownRetryTimer.pause()
 
         self._networkAppearsDown = bool(isDown)
 
@@ -556,9 +557,18 @@ class Client(object):
 
     def retryNetwork(self, *args, **kwargs):
         """Assuming the network was down, retry from step #0."""
-        print("The network was down. Retrying...")
-        self.networkAppearsDown = False
-        # XXXX no detection for if we've left the dystopia
+        if not self.networkAppearsDown:
+            return
+
+        print("Retrying the network...")
+        if self.currentPrimaryGuards and not self.hasAnyCurrentPrimaryGuardsUp:
+            print("All %s guards are down!" % self._state)
+            self.checkFailoverThreshold()
+
+        # The detection for if we've left the dystopic is done in markGuard().
+        if self.networkAppearsDown:
+            self.networkAppearsDown = False
+
         self.getGuard(self.inADystopia)
 
     def maybeCheckNetwork(self):
@@ -566,12 +576,8 @@ class Client(object):
         cross-platform manner) to see if we have a network interface available
         which has some plausibly-seeming configured route.
         """
-        if self._dystopic:
-            if self._dystopianNetworkDownRetryTimer.isReady():
-                self._dystopianNetworkDownRetryTimer.fire()
-        else:
-            if self._utopianNetworkDownRetryTimer.isReady():
-                self._utopianNetworkDownRetryTimer.fire()
+        if self._networkDownRetryTimer.isReady():
+            self._networkDownRetryTimer.fire()
 
     def retryPrimaryGuards(self):
         """Retry our primary guards (from both PRIMARY_UTOPIC_GUARDS and
@@ -600,8 +606,6 @@ class Client(object):
             # 0. Determine if the local network is potentially accessible.
             self.maybeCheckNetwork()
             if self.networkAppearsDown:
-                # XXXX [prop259] It isn't very well defined what we should do if
-                # the network seems to be down…
                 print("The network is (still) down...")
                 return
 
@@ -685,10 +689,6 @@ class Client(object):
         up = self._net.probe_node_is_up(guard.node)
         guard.mark(up)
 
-        # If a utopic guard is up, and we previously thought we were in a
-        # dystopia, then we must have left the dystopia.
-        if not guard.node.seemsDystopic and up and self.inADystopia:
-            self.inAUtopia = True
         if up:
             self._GUARD_BANDWIDTHS.append(guard._node.bandwidth)
 
