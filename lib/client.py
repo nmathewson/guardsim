@@ -632,12 +632,8 @@ class Client(object):
         # 3. Take the list of all available and fitting entry guards and return
         # the top one in the list.
         if self.conformsToProp241:
-            lst = []
-            lst.extend(self.getPrimaryUtopicGuards())
-            lst.extend(self.getPrimaryDystopicGuards())
-
-            usable = [ g for g in lst if g.canTry() ]
-            listed = [ g for g in lst if g.isListed() ]
+            usable = [g for g in self.allPrimaryGuards if g.canTry()]
+            listed = [g for g in self.allPrimaryGuards if g.isListed()]
 
             # See if we should retry or add more or use what we have.
             # Here we consider the number of currently-guardy guards.
