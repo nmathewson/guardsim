@@ -316,7 +316,28 @@ class Client(object):
         else:
             return self.guardsThresholdUtopic
 
+    @property
+    def canAddPrimaryDystopicGuard(self):
+        """Returns True if we haven't hit guardsThresholdDystopic."""
+        if self.conformsToProp259:
+            if len(self.primaryDystopicGuards) >= self.guardsThresholdDystopic:
+                return False
+        return True
 
+    @property
+    def canAddPrimaryUtopicGuard(self):
+        """Returns True if we haven't hit guardsThresholdUtopic."""
+        if self.conformsToProp259:
+            if len(self.primaryUtopicGuards) >= self.guardsThresholdUtopic:
+                return False
+        return True
+
+    @property
+    def canAddPrimaryGuard(self):
+        """Returns True if we haven't hit guardsThreshold."""
+        if self.inAUtopia:
+            return self.canAddPrimaryUtopicGuard
+        return self.canAddPrimaryDystopicGuard
 
     @property
     def inADystopia(self):
@@ -375,6 +396,48 @@ class Client(object):
             self._dystopianNetworkDownRetryTimer.reset()
 
         self._networkAppearsDown = bool(isDown)
+
+    @property
+    def hasAnyPrimaryDystopicGuardsUp(self):
+        """Returns True if any of _PRIMARY_DYS are up."""
+        return bool(sum([g._markedUp for g in self.primaryDystopicGuards]))
+
+    @property
+    def hasAnyPrimaryUtopicGuardsUp(self):
+        """Returns True if any of _PRIMARY_U are up."""
+        return bool(sum([g._markedUp for g in self.primaryUtopicGuards]))
+
+    @property
+    def hasAnyPrimaryGuardsUp(self):
+        """Returns True if any of our utopic **or** dystopic primary guards are up."""
+        return bool(sum([g._markedUp for g in self.allPrimaryGuards]))
+
+    @property
+    def hasAnyCurrentPrimaryGuardsUp(self):
+        """Returns True if any of our current primary guards are up."""
+        return bool(sum([g._markedUp for g in self.currentPrimaryGuards]))
+
+    @property
+    def primaryDystopicGuards(self):
+        """Get the list of dystopic guards which we should prioritise trying."""
+        return self._PRIMARY_DYS
+
+    @property
+    def primaryUtopicGuards(self):
+        """Get the list of utopic guards which we should prioritise trying."""
+        return self._PRIMARY_U
+
+    @property
+    def allPrimaryGuards(self):
+        """Get a combined list of primary utopic and dystopic guards."""
+        return self.primaryDystopicGuards + self.primaryUtopicGuards
+
+    @property
+    def currentPrimaryGuards(self):
+        """Get the list of primary guards for the current utopia/dystopia setting."""
+        if self.inADystopia:
+            return self.primaryDystopicGuards
+        return self.primaryUtopicGuards
 
     def checkFailoverThreshold(self):
         """From prop259:
@@ -435,20 +498,6 @@ class Client(object):
                 else:
                     g.markUnlisted()
 
-    def getPrimaryUtopicGuards(self):
-        """Get the list of utopic guards which we should prioritise trying."""
-        return self._PRIMARY_U
-
-    def getPrimaryDystopicGuards(self):
-        """Get the list of dystopic guards which we should prioritise trying."""
-        return self._PRIMARY_DYS
-
-    def getPrimaryGuards(self):
-        """Get the list of primary guards for a given dystopia setting."""
-        if self.inADystopia:
-            return self.getPrimaryDystopicGuards()
-        return self.getPrimaryUtopicGuards()
-
     def getFullList(self):
         """Get the list of possible Nodes from the consensus for a given
            dystopia setting"""
@@ -468,7 +517,7 @@ class Client(object):
         # to add too many guards.  If we've added too many guards too recently,
         # then boo-hoo-hoo no tor for you.
         nTriedRecently = 0
-        for guard in self.getPrimaryGuards():
+        for guard in self.currentPrimaryGuards:
             if guard.addedWithin(self._p.TOO_RECENTLY):
                 nTriedRecently += 1
             if nTriedRecently >= self.guardsThreshold:
@@ -476,7 +525,7 @@ class Client(object):
 
         possible = self.getFullList()
         unused = [n for n in possible if not
-                  self.nodeIsInGuardList(n, self.getPrimaryGuards())]
+                  self.nodeIsInGuardList(n, self.currentPrimaryGuards)]
 
         if self._p.PRIORITIZE_BANDWIDTH:
             node = unused[0]
@@ -494,7 +543,7 @@ class Client(object):
         print(("Picked new (%stopic) guard: %s" %
                ("dys" if node.seemsDystopic() else "u", guard)))
 
-        lst = self.getPrimaryGuards()
+        lst = self.currentPrimaryGuards
         lst.append(guard)
 
     def nodeIsInGuardList(self, n, gl):
@@ -538,7 +587,7 @@ class Client(object):
         """
         print("Retrying primary guards. We're currently %s." % self._state)
 
-        for guard in self.getPrimaryGuards():
+        for guard in self.currentPrimaryGuards:
             if guard._markedDown:
                 print("Primary %s guard %s was marked down, marking for retry…"
                       % (self._state, guard))
@@ -590,7 +639,7 @@ class Client(object):
             # XXXX are these supposed to be different lists?  Are we
             # XXXX also supposed to consider non-dystopian guards
             # XXXX when we think we're not in a dystopia?
-            lst = self.getPrimaryGuards()
+            lst = self.currentPrimaryGuards
 
             # We can add another one.
             full = self.getFullList()
@@ -610,7 +659,7 @@ class Client(object):
         if self.conformsToProp259:
             #XXXX Need an easy way to say that the UTOPIC_GUARDS includes
             # routers advertised on 80/443.
-            guards = filter(lambda g: g.canTry(), self.getPrimaryGuards())
+            guards = filter(lambda g: g.canTry(), self.currentPrimaryGuards)
 
             # XXXX [prop259] ADD_TO_SPEC
             # 3.5. If we should retry our primary guards, then do so.
@@ -618,13 +667,14 @@ class Client(object):
                 if self._primaryGuardsRetryTimer.isReady():
                     self._primaryGuardsRetryTimer.fire()
 
-            guards = filter(lambda g: g.canTry(), self.getPrimaryGuards())
+            guards = filter(lambda g: g.canTry(), self.currentPrimaryGuards)
 
             # 4. If there were no available entry guards, the algorithm adds a new entry
             # guard and returns it.  [XXX detail what "adding" means]
             if not guards:
                 self.addNewGuard()
 
+            # Use the first guard that works.
             for guard in guards:
                 if self.connectToGuard(guard):
                     return guard
