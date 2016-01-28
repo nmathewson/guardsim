@@ -698,7 +698,8 @@ class Client(object):
         """Try to connect to 'guard' -- if it's up on the network, mark it up.
            Return true on success, false on failure."""
         up = self._net.probe_node_is_up(guard.node)
-        guard.mark(up)
+        self.markGuard(guard, up)
+        self.checkFailoverThreshold()
 
         if up:
             self._GUARD_BANDWIDTHS.append(guard._node.bandwidth)
