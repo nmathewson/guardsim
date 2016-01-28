@@ -552,6 +552,20 @@ class Client(object):
                 return True
         return False
 
+    def markGuard(self, guard, up):
+        guard.mark(up)
+
+        # If a utopic guard is up, and we previously thought we were in a
+        # dystopia, then we must have left the dystopia.
+        if up:
+            if self.networkAppearsDown:
+                self.networkAppearsDown = False
+
+            if not guard.node.seemsDystopic() and self.inADystopia:
+                print("A utopic guard suddenly worked while we thought we were "
+                      "in a dystopia...")
+                self.inAUtopia = True
+
     def retryNetwork(self, *args, **kwargs):
         """Assuming the network was down, retry from step #0."""
         if not self.networkAppearsDown:
