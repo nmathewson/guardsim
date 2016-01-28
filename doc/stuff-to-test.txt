@@ -1,31 +1,50 @@
 
 Network scenarios (normal):
-   * Normal network; all hosts up with P=x%
-   * Network is down and looks down.
-   * Network seems up but is down.
-   * FascistFirewall; only 443 and 80 reachable. P=x%
+---------------------------
 
-   * User moves among above networks over time.
+   * Normal network; all hosts up with P=x%:
+       `./lib/main.py --prop[241|259]`
+   * TODO: Network is down and looks down.
+   * TODO: Network seems up but is down.
+   * FascistFirewall; only 443 and 80 reachable, P=x%:
+       `./lib/main.py -F --prop[241|259]`
+   * TODO: User moves among above networks over time.
 
 Guard behavior:
-   * Guard goes away and comes back a lot
+---------------
+
+These three are not explicitly tested yet, but occur as part of
+the normal churn cycle of the simulation:
+
    * Guard stays up
    * Guard starts up, goes down.
    * Some change over time about which guards are Running/Guard/listed.
 
+And this one needs a parameter added to the options parser in order to
+explicitly change it:
+
+   * TODO: Guard goes away and comes back a lot
+
 User behavior:
+--------------
+
    * Regular
-   * Bridge
-   * FascistFirewall set.
-   * Restart tor (when not working? Repeatedly)
-   * HUP tor (when not working? repeatedly?)
+       - The default network assumes we're not using bridges.
+   * TODO: Bridge
+       - There is no simulation for using (or switching to) bridges yet.
+   * TODO: FascistFirewall set (by user).
+       - The default network assumes it's set to [443,80].
+   * TODO: Restart tor (when not working? Repeatedly)
+   * TODO: HUP tor (when not working? repeatedly?)
 
-Network scenarios (hostile)
-   * Targeted guard takedown attack: attacker hits guards one after another.
+Network scenarios (hostile):
+----------------------------
+
+   * Targeted guard takedown attack: attacker hits guards one after another:
+       `./lib/main.py -s --prop[241|259]`
    * Network under broad attack: many guards are flaky
-
-   * Filtering at gateway; non-hostile fractino of Tor guards is unavailable.
-
-   * Filtering at guard: guard blocks connections when it does not control
+       `./lib/main.py -f --prop[241|259]`
+   * Filtering at gateway; non-hostile fractino of Tor guards is unavailable:
+       `./lib/main.py -e --prop[241|259]`
+   * TODO: Filtering at guard: guard blocks connections when it does not control
      path (out of scope?)
-   * 
