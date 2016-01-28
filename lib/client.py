@@ -451,17 +451,14 @@ class Client(object):
              to herself that she is possibly behind a fascist firewall.
         """
         if self.conformsToProp259:
-            nTried = len(self.getPrimaryGuards())
+            if not self.canAddPrimaryGuard:
+                if not self.hasAnyCurrentPrimaryGuardsUp:
+                    print("We already have %d %s guards and can't add more… " %
+                          (self.guardsThreshold, self._state))
 
-            if nTried >= self.guardsThreshold:
-                print("We've hit the %stopic failover rate! (%d)" %
-                      ("u" if self.inAUtopia else "dys",
-                       self.guardsThreshold))
-                if self.inAUtopia:
-                    print("Trying dystopic guards!")
-                    self.inAUtopia = False
-                elif self.inADystopia:
-                    print("Marking the network as down!")
+                if self.inAUtopia and not self.hasAnyPrimaryUtopicGuardsUp:
+                    self.inADystopia = True
+                elif self.inADystopia and not self.hasAnyPrimaryDystopicGuardsUp:
                     self.networkAppearsDown = True
 
                 return False
